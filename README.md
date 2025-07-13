@@ -1,65 +1,32 @@
-# Qwik City App ⚡️
+## What is this project is about?
+This is an attempt to define UI in a keyboard-centric approach inspired by Vim text editor, aims to generalize core concept in Vim to work for any kind of appliation/UI component
 
-- [Qwik Docs](https://qwik.dev/)
-- [Discord](https://qwik.dev/chat)
-- [Qwik GitHub](https://github.com/QwikDev/qwik)
-- [@QwikDev](https://twitter.com/QwikDev)
-- [Vite](https://vitejs.dev/)
+Here is core aspect:
 
----
-
-## Project Structure
-
-This project is using Qwik with [QwikCity](https://qwik.dev/qwikcity/overview/). QwikCity is just an extra set of tools on top of Qwik to make it easier to build a full site, including directory-based routing, layouts, and more.
-
-Inside your project, you'll see the following directory structure:
+## Mutual Execlusive Mode
+I think the is the core aspect that made Vim great, it is a concept that address the question: what if two different UI component assign an action to the same keystroke (let's say `ctrl` + `f`)?
 
 ```
-├── public/
-│   └── ...
-└── src/
-    ├── components/
-    │   └── ...
-    └── routes/
-        └── ...
+export const GoogleComp = component$(() => {
+    useVisibleTask$(() => {
+        window.onkeydown?.(((ev: KeyboardEvent) => {
+            if (ev.key == "f" && ev.ctrlKey) {
+                // navigate to google.com
+            }
+        }) as any);
+    }, { strategy: "document-ready" });
+    return <div />
+})
+export const FacebookComp = component$(() => {
+    useVisibleTask$(() => {
+        window.onkeydown?.(((ev: KeyboardEvent) => {
+            if (ev.key == "f" && ev.ctrlKey) {
+                // navigate to facebook.com
+            }
+        }) as any);
+    }, { strategy: "document-ready" });
+    return <div />
+})
 ```
 
-- `src/routes`: Provides the directory-based routing, which can include a hierarchy of `layout.tsx` layout files, and an `index.tsx` file as the page. Additionally, `index.ts` files are endpoints. Please see the [routing docs](https://qwik.dev/qwikcity/routing/overview/) for more info.
-
-- `src/components`: Recommended directory for components.
-
-- `public`: Any static assets, like images, can be placed in the public directory. Please see the [Vite public directory](https://vitejs.dev/guide/assets.html#the-public-directory) for more info.
-
-## Add Integrations and deployment
-
-Use the `npm run qwik add` command to add additional integrations. Some examples of integrations includes: Cloudflare, Netlify or Express Server, and the [Static Site Generator (SSG)](https://qwik.dev/qwikcity/guides/static-site-generation/).
-
-```shell
-npm run qwik add # or `yarn qwik add`
-```
-
-## Development
-
-Development mode uses [Vite's development server](https://vitejs.dev/). The `dev` command will server-side render (SSR) the output during development.
-
-```shell
-npm start # or `yarn start`
-```
-
-> Note: during dev mode, Vite may request a significant number of `.js` files. This does not represent a Qwik production build.
-
-## Preview
-
-The preview command will create a production build of the client modules, a production build of `src/entry.preview.tsx`, and run a local server. The preview server is only for convenience to preview a production build locally and should not be used as a production server.
-
-```shell
-npm run preview # or `yarn preview`
-```
-
-## Production
-
-The production build will generate client and server modules by running both client and server build commands. The build command will use Typescript to run a type check on the source code.
-
-```shell
-npm run build # or `yarn build`
-```
+beside the possible conflict, there is a problem in the Javascript language itself, a component can define a a `keydown` event without you being able to know that it does that AT A BUILDTIME, that means if you want to prevent all components (let's say you work with 100s of developers on a open-source project) you have to scan every line of code (like a caveman) for that violation, instead of having an `if` statement that runs at a build time and gives you a warning as part of your LSP experience (I don't think liters/develper guides are appropriate solutions), but that is a whole different rant.

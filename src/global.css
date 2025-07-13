@@ -1,3 +1,7 @@
 @import "tailwindcss";
 
+input:focus-within {
+    outline: none;
+}
+
 
