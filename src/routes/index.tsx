@@ -29,14 +29,14 @@ export default component$(() => {
     `);
 
     return (
-            <div class="feed w-max-full w-[400px] flex flex-col">
-                <div class="flex-1" />
-                <FeedItem>Click <Key item="ctrl" /><Key item="n" /> to go to navigate mode from anywhere</FeedItem>
-                <FeedItem>Click <Key item="ctrl" /><Key item=":" /> to go to command mode</FeedItem>
-                <div class="rounded m-4 px-1 bg-slate-200 focus-within:bg-white focus-within:ring focus-within:ring-1 focus-within:ring-slate">
-                    <input placeholder="click ctrl+: to go to command mode" class="w-full" type="text" />
-                </div>
+        <div class="feed w-max-full w-[400px] flex flex-col">
+            <div class="flex-1" />
+            <FeedItem>Click <Key item="ctrl" /><Key item="n" /> to go to navigate mode from anywhere</FeedItem>
+            <FeedItem>Click <Key item="ctrl" /><Key item=":" /> to go to command mode</FeedItem>
+            <div class="rounded m-4 px-1 bg-slate-200 focus-within:bg-white focus-within:ring focus-within:ring-1 focus-within:ring-slate">
+                <input placeholder="click ctrl+: to go to command mode" class="w-full" type="text" />
             </div>
+        </div>
     );
 });
 
