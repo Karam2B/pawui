@@ -1,5 +1,84 @@
 @import "tailwindcss";
 
+.bg-50{ background-color: oklch(98.4% .003 247.858) }
+.bg-100{ background-color: oklch(96.8% .007 247.896) }
+.bg-200{ background-color: oklch(92.9% .013 255.508) }
+.bg-300{ background-color: oklch(86.9% .022 252.894) }
+.bg-400{ background-color: oklch(70.4% .040 256.788) }
+
+.bg-600{ background-color: oklch(44.6% .043 257.281) }
+.bg-700{ background-color: oklch(37.2% .044 257.287) }
+.bg-800{ background-color: oklch(27.9% .041 260.031) }
+.bg-900{ background-color: oklch(20.8% .042 265.755) }
+.bg-950{ background-color: oklch(12.9% .042 264.695) }
+
+.bg-50, .bg-100, .bg-200, .bg-300, .bg-400 {
+    color: black
+}
+.bg-600, .bg-700, .bg-800, .bg-900, .bg-950 {
+    color: white
+}
+
+.highlight { background-color: oklch(86.9% .022 252.894) }
+.navigate { background-color: oklch(86.9% .022 252.894) }
+
+
+
+.dim {
+    color: #2b2d28 /* xxx with bg-800 */
+}
+.bg-400 .dim, .bg-300 .dim {
+    color: black
+}
+
+.bg-800 .dim, .bg-900 .dim, .bg-950 .dim {
+    color: #b2b4b7 /* 7.04 with bg-800 */
+}
+.bg-700 .dim, .bg-600 .dim {
+    color: white
+}
+
+
+@media (prefers-color-scheme: "dark") {
+    .bg-50{ background-color: oklch(12.9% .042 264.695)}
+    .bg-100{ background-color: oklch(20.8% .042 265.755)}
+    .bg-200{ background-color: oklch(27.9% .041 260.031) }
+    .bg-300{ background-color: oklch(37.2% .044 257.287)}
+    .bg-400{ background-color: oklch(44.6% .043 257.281) }
+    .bg-600{ background-color: oklch(70.4% .040 256.788) }
+    .bg-700{ background-color: oklch(86.9% .022 252.894)  }
+    .bg-800{ background-color: oklch(92.9% .013 255.508) }
+    .bg-900{ background-color: oklch(96.8% .007 247.896) }
+    .bg-950{ background-color: oklch(98.4% .003 247.858) }
+
+    .bg-50, .bg-100, .bg-200, .bg-300, .bg-400 {
+        color: white
+    }
+    .bg-600, .bg-700, .bg-800, .bg-900, .bg-950 {
+        color: black
+    }
+
+
+    .dim {
+        color: #b2b4b7 /* 7.04 with bg-800 */
+    }
+    .bg-700 .dim, .bg-600 .dim {
+        color: white
+    }
+    .bg-200 .dim, .bg-100 .dim, .bg-50 .dim {
+        color: #2b2d28 
+    }
+    .bg-400 .dim, .bg-300 .dim {
+        color: black
+    }
+}
+
+
+@media (prefers-color-scheme: "dark") {
+    .highlight { background-color: oklch(96.8% .007 247.896) }
+    .navigate { background-color: oklch(96.8% .007 247.896) }
+}
+
 input:focus-within {
     outline: none;
 }
