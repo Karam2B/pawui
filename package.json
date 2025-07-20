@@ -27,6 +27,7 @@
     "@builder.io/qwik": "^1.14.1",
     "@builder.io/qwik-city": "^1.14.1",
     "@eslint/js": "latest",
+    "@qwikest/icons": "^0.0.13",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "20.14.11",
     "@vanilla-extract/css": "^1.12.0",
@@ -37,12 +38,12 @@
     "prettier": "3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.11",
     "tailwindcss": "^4.0.0",
+    "tailwindcss-preflight": "^1.0.1",
     "typescript": "5.4.5",
     "typescript-eslint": "8.26.1",
     "undici": "*",
     "vite": "5.3.5",
-    "@qwikest/icons": "^0.0.13",
-    "tailwindcss-preflight": "^1.0.1",
-    "vite-tsconfig-paths": "^4.2.1"
+    "vite-tsconfig-paths": "^4.2.1",
+    "valibot": "^1.1.0"
   }
 }
