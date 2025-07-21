@@ -1,9 +1,8 @@
 import { noSerialize, $, Slot, component$, isDev, useSignal, useStylesScoped$, useTask$, useVisibleTask$, NoSerialize } from "@builder.io/qwik";
+import * as v from "valibot"
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
-
 import { RouterHead } from "./components/router-head/router-head";
 import "./global.css";
-import { allowedNodeEnvironmentFlags } from "process";
 
 
 export type GlobalIdent = {
@@ -24,73 +23,72 @@ export type Keymap = {
 
 export type Mode = {
     id: string,
-    allow_input_to_pass: boolean,
+    block_20_7e: "never" | "change_at_runtime" | "always",
     view: {
         bg: string,
         fg: string,
     },
     enter_dom: () => void,
     exit_dom: () => void
+    runtime_value_schema: v.GenericSchema
 }
 
-function navigate_right() {
+async function navigate_right() {
     if (!window) { return }
-    let nav = window.document.querySelector("[data-navigate=\"element\"]");
+    let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
     if (!nav) {
         return
     }
-    let parent = window.document.querySelector("[data-navigate=\"parent\"]");
+    let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
     if (!parent) {
         return
     }
     let prev = nav.nextElementSibling;
     if (prev) {
-        nav.removeAttribute("data-navigate");
-        prev.setAttribute("data-navigate", "element");
+        nav.removeAttribute("data-navigate-ty");
+        prev.setAttribute("data-navigate-ty", "cursor");
     } else {
-        let prev_cont = window.document.querySelectorAll(`[data-container]`);
-        // if (prev_cont) {
-        //
-        // }
+        // let prev_cont = window.document.querySelectorAll(`[data-container]`);
+        // // if (prev_cont) {
+        // //
+        // // }
     }
 }
-function navigate_left() {
+async function navigate_left() {
     if (!window) { return }
-    let nav = window.document.querySelector("[data-navigate=\"element\"]");
+    let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
     if (!nav) {
         return
     }
-    let parent = window.document.querySelector("[data-navigate=\"parent\"]");
+    let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
     if (!parent) {
         return
     }
     let prev = nav.previousElementSibling;
     if (prev) {
-        nav.removeAttribute("data-navigate");
-        prev.setAttribute("data-navigate", "element");
+        nav.removeAttribute("data-navigate-ty");
+        prev.setAttribute("data-navigate-ty", "cursor");
     } else {
-        let prev_cont = window.document.querySelectorAll(`[data-container]`);
-        // if (prev_cont) {
-        //
-        // }
+        // let prev_cont = window.document.querySelectorAll(`[data-container]`);
+        // // if (prev_cont) {
+        // //
+        // // }
     }
 }
 
-function command_line() {
-
-}
-const core_modes = [{
+const core_modes: Array<Mode> = [{
     id: "navigate",
-    allow_input_to_pass: false,
+    block_20_7e: "always",
     view: {
         fg: "black", bg: "oklch(72.3% 0.219 149.579)"
     },
+    runtime_value_schema: v.object({}),
     enter_dom: () => {
         if (!window) {
             console.error("window not found");
             return
         }
-        let elem = window.document.querySelector('[data-navigate="element"]');
+        let elem = window.document.querySelector('[data-navigate-ty="cursor"]');
         if (!elem) {
             console.error("navigate was not found")
             return
@@ -102,10 +100,11 @@ const core_modes = [{
 },
 {
     id: "command",
-    allow_input_to_pass: true,
+    block_20_7e: "never",
     view: {
         fg: "black", bg: "oklch(70.4% 0.191 22.216)"
     },
+    runtime_value_schema: v.object({}),
     enter_dom: () => {
         if (!window) {
             console.error("window not found");
@@ -134,10 +133,10 @@ const core_actions = [
         "navigate",
         { key: "l", alt_pressed: false, ctrl_pressed: false }
     ]
-] as Array<[() => void, string, null | Keymap["keystroke"]]>
+] as Array<[() => Promise<void>, string, null | Keymap["keystroke"]]>
 
-const insert_actions = {
-    "\\": null, "|": null, "\"": null, "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "0": null, "-": null, "=": null, "!": null, "@": null, "#": null,
+const keys_20_7e = {
+    " ": null, "\\": null, "|": null, "\"": null, "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "0": null, "-": null, "=": null, "!": null, "@": null, "#": null,
     "$": null, "%": null, "^": null, "&": null, "*": null, "(": null, ")": null, "_": null, "+": null, "`": null, "~": null, "q": null, "w": null, "e": null, "r": null, "t": null, "y": null, "u": null, "i": null, "o": null, "p": null, "[": null, "]": null, "a": null, "s": null, "d": null, "f": null, "g": null, "h": null, "j": null, "k": null,
     "l": null, ";": null, "'": null, "z": null, "x": null, "c": null, "v": null, "b": null, "n": null, "m": null, ",": null, ".": null, "/": null, "Q": null, "W": null, "E": null, "R": null, "T": null, "Y": null, "U": null, "I": null, "O": null, "P": null, "{": null,
     "}": null, "A": null, "S": null, "D": null, "F": null, "G": null, "H": null, "J": null, "K": null, "L": null, ":": null, "Z": null, "X": null, "C": null, "V": null, "B": null, "N": null, "M": null, "<": null, ">": null, "?": null,
@@ -148,7 +147,7 @@ export default component$(() => {
     let layout_ready_in = useSignal(1);
 
     let actions = useSignal<Map<string, () => void>>(new Map());
-    let add_action = $(async (id: GlobalIdent, action: () => void) => {
+    let add_action = $(async (id: GlobalIdent, action: () => Promise<void>) => {
         actions.value.set(JSON.stringify([id.plugin, id.id]), action)
     });
     let fire_action = $((id: GlobalIdent) => {
@@ -168,23 +167,111 @@ export default component$(() => {
         // console.log("keymaps", keymaps.value)
     })
 
+
+    let navigate_up = $(() => {
+        if (!window) { return }
+        let cursor = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
+        if (!cursor) {
+            return
+        }
+        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        let parent_type = parent?.getAttribute("data-navigate-container");
+        if (!parent || !parent_type) {
+            return
+        }
+
+        let cursor_rect = cursor.getBoundingClientRect();
+        let parent_rect = parent.getBoundingClientRect();
+        let x = cursor_rect.x + (cursor_rect.width / 2) - parent_rect.x;
+        let x_that_decreases = x;
+        let look_forward = cursor.previousElementSibling;
+        while (look_forward != null) {
+            let look_forward_rect = look_forward.getBoundingClientRect();
+            let left = look_forward_rect.x - parent_rect.x;
+            // console.log(look_forward.childNodes[0], x, x_that_increases, right)
+            if (left < x_that_decreases) {
+                let look_forwardx = look_forward.previousElementSibling;
+                if (!look_forwardx) { break }
+                look_forward = look_forwardx;
+                x_that_decreases = left;
+                continue
+            } else if (left < x) {
+                // found
+                break
+            } else {
+                let look_forwardx = look_forward.previousElementSibling;
+                if (!look_forwardx) { break }
+                look_forward = look_forwardx;
+                continue
+            }
+        }
+
+        // console.log("lookforward", look_forward?.childNodes[0])
+
+
+        if (look_forward != null) {
+            cursor.removeAttribute("data-navigate-ty");
+            look_forward.setAttribute("data-navigate-ty", "cursor");
+        }
+    });
+    let navigate_down = $(() => {
+        if (!window) { return }
+        let cursor = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
+        if (!cursor) {
+            return
+        }
+        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        let parent_type = parent?.getAttribute("data-navigate-container");
+        if (!parent || !parent_type) {
+            return
+        }
+
+        let cursor_rect = cursor.getBoundingClientRect();
+        let parent_rect = parent.getBoundingClientRect();
+        let x = cursor_rect.x + cursor_rect.width / 2 - parent_rect.x;
+        let x_that_increases = x;
+        cursor.setAttribute("data-navigate-x", String(x));
+
+        let look_forward = cursor.nextElementSibling;
+        while (look_forward != null) {
+            let look_forward_rect = look_forward.getBoundingClientRect();
+            let right = look_forward_rect.x + look_forward_rect.width - parent_rect.x;
+            // console.log(look_forward.childNodes[0], x, x_that_increases, right)
+            if (right > x_that_increases) {
+                let look_forwardx = look_forward.nextElementSibling;
+                if (!look_forwardx) { break }
+                look_forward = look_forwardx;
+                x_that_increases = right;
+                continue
+            } else if (right > x) {
+                // found
+                break
+            } else {
+                let look_forwardx = look_forward.nextElementSibling;
+                if (!look_forwardx) { break }
+                look_forward = look_forwardx;
+                continue
+            }
+        }
+
+        // console.log("lookforward", look_forward?.childNodes[0])
+
+
+        if (look_forward != null) {
+            cursor.removeAttribute("data-navigate-ty");
+            look_forward.setAttribute("data-navigate-ty", "cursor");
+        }
+    });
+
+    useVisibleTask$(async () => {
+        add_action({ plugin: "core", id: "navigate_down" }, navigate_down);
+        add_action({ plugin: "core", id: "navigate_up" }, navigate_up);
+        add_keymap({ action_id: { plugin: "core", id: "navigate_down" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "j", alt_pressed: false, ctrl_pressed: false } });
+        add_keymap({ action_id: { plugin: "core", id: "navigate_up" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "k", alt_pressed: false, ctrl_pressed: false } });
+    }, { strategy: "document-ready" });
+
     // set up core plugin!
     useVisibleTask$(async () => {
-        // for (const letter in insert_actions) {
-        //     add_keymap({
-        //         mode: "command",
-        //         action_id: {
-        //             plugin: "core",
-        //             id: "insert_pass",
-        //         },
-        //         keystroke: {
-        //             mode: "one_presdown",
-        //             key: letter as any,
-        //             alt_pressed: false,
-        //             ctrl_pressed: false
-        //         }
-        //     })
-        // }
         for (const item of core_actions) {
             let key = item[0].name;
             let action = item[0];
@@ -210,9 +297,10 @@ export default component$(() => {
         }
     }, { strategy: "document-ready" });
 
-    let current = useSignal<Omit<Mode, "enter_dom" | "exit_dom">>({
+    let current = useSignal<{ block_20_7e_val: boolean } & Omit<Mode, "runtime_value_schema" | "enter_dom" | "exit_dom">>({
         id: "navigate",
-        allow_input_to_pass: false,
+        block_20_7e: "never",
+        block_20_7e_val: false,
         view: {
             fg: "black", bg: "oklch(72.3% 0.219 149.579)"
         },
@@ -274,8 +362,8 @@ export default component$(() => {
 
         async function prevent_def(ev: KeyboardEvent) {
             // @ts-ignore
-            let found = insert_actions[ev.key];
-            if (current.value.allow_input_to_pass && found == null && !ev.altKey && !ev.ctrlKey) {
+            let found = keys_20_7e[ev.key];
+            if (current.value.block_20_7e_val && found == null && !ev.altKey && !ev.ctrlKey) {
                 console.log("input is allowed to pass");
             } else {
                 ev.preventDefault();
@@ -300,7 +388,7 @@ export default component$(() => {
     let change_mode = $((id: string) => {
         let found = modes.value?.find((e) => { e.id == id })
         if (found) {
-            current.value = { id: found.id, view: found.view, allow_input_to_pass: found.allow_input_to_pass }
+            current.value = { id: found.id, view: found.view, block_20_7e_val: found.block_20_7e == "always" ? true : false, block_20_7e: found.block_20_7e }
         }
     });
     useVisibleTask$(async ({ track }) => {
@@ -308,24 +396,24 @@ export default component$(() => {
             track(modes)
             return
         }
-        await add_action({ plugin: "core", id: "go_to_navigate_mode" }, () => {
+        await add_action({ plugin: "core", id: "go_to_navigate_mode" }, async () => {
             let found = modes.value?.find((e) => {
                 // console.log("find mode", e, e.id == "command");
                 return e.id == "navigate"
             })
             if (found) {
-                current.value = { id: found.id, view: found.view, allow_input_to_pass: found.allow_input_to_pass }
+                current.value = { id: found.id, view: found.view, block_20_7e_val: true, block_20_7e: found.block_20_7e }
             } else {
                 console.error("no mode by name: ", "navigate", "available modes are", modes.value)
             }
         });
-        await add_action({ plugin: "core", id: "go_to_normal_mode" }, () => {
+        await add_action({ plugin: "core", id: "go_to_normal_mode" }, async () => {
             let found = modes.value?.find((e) => {
                 // console.log("find mode", e, e.id == "command");
                 return e.id == "command"
             })
             if (found) {
-                current.value = { id: found.id, view: found.view, allow_input_to_pass: found.allow_input_to_pass }
+                current.value = { id: found.id, view: found.view, block_20_7e_val: false, block_20_7e: found.block_20_7e }
             } else {
                 console.error("no mode by name: ", "command", "available modes are", modes.value)
             }
@@ -380,8 +468,10 @@ export default component$(() => {
     `);
 
     useStylesScoped$(`
-       [data-navigate="element"] {background: red}
+       [data-navigate-ty="cursor"] {background: red}
     `);
+
+
 
     return (
         <QwikCityProvider>
@@ -402,12 +492,22 @@ export default component$(() => {
                             {layout_ready_in.value == 0 &&
                                 <>
                                     <div class="flex-1 " />
-                                    <div data-navigate="parent" data-container="flex-row"
+                                    <div data-navigate-ty="parent" data-navigate-container="flex-row"
                                         class=" flex flex flex-wrap gap-1 ">
+                                        <div>porro</div>
                                         <div>porro</div>
                                         <div>quisquam</div>
                                         <div>est</div>
-                                        <div data-navigate={"element"} >qui</div>
+                                        <div>dolorem</div>
+                                        <div>ipsum</div>
+                                        <div>quia</div>
+                                        <div>dolor</div>
+                                        <div>sit</div>
+                                        <div>amet</div>
+                                        <div>hi </div>
+                                        <div>quisquam</div>
+                                        <div>est</div>
+                                        <div data-navigate-ty="cursor">qui</div>
                                         <div>dolorem</div>
                                         <div>ipsum</div>
                                         <div>quia</div>
