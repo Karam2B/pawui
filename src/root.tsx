@@ -33,48 +33,8 @@ export type Mode = {
     runtime_value_schema: v.GenericSchema
 }
 
-async function navigate_right() {
-    if (!window) { return }
-    let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
-    if (!nav) {
-        return
-    }
-    let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
-    if (!parent) {
-        return
-    }
-    let prev = nav.nextElementSibling;
-    if (prev) {
-        nav.removeAttribute("data-navigate-ty");
-        prev.setAttribute("data-navigate-ty", "cursor");
-    } else {
-        // let prev_cont = window.document.querySelectorAll(`[data-container]`);
-        // // if (prev_cont) {
-        // //
-        // // }
-    }
-}
-async function navigate_left() {
-    if (!window) { return }
-    let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
-    if (!nav) {
-        return
-    }
-    let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
-    if (!parent) {
-        return
-    }
-    let prev = nav.previousElementSibling;
-    if (prev) {
-        nav.removeAttribute("data-navigate-ty");
-        prev.setAttribute("data-navigate-ty", "cursor");
-    } else {
-        // let prev_cont = window.document.querySelectorAll(`[data-container]`);
-        // // if (prev_cont) {
-        // //
-        // // }
-    }
-}
+
+
 
 const core_modes: Array<Mode> = [{
     id: "navigate",
@@ -122,18 +82,18 @@ const core_modes: Array<Mode> = [{
 }];
 
 
-const core_actions = [
-    [
-        navigate_left,
-        "navigate",
-        { key: "h", alt_pressed: false, ctrl_pressed: false }
-    ],
-    [
-        navigate_right,
-        "navigate",
-        { key: "l", alt_pressed: false, ctrl_pressed: false }
-    ]
-] as Array<[() => Promise<void>, string, null | Keymap["keystroke"]]>
+// const core_actions = [
+//     [
+//         navigate_left,
+//         "navigate",
+//         { key: "h", alt_pressed: false, ctrl_pressed: false }
+//     ],
+//     [
+//         navigate_right,
+//         "navigate",
+//         { key: "l", alt_pressed: false, ctrl_pressed: false }
+//     ]
+// ] as Array<[() => Promise<void>, string, null | Keymap["keystroke"]]>
 
 const keys_20_7e = {
     " ": null, "\\": null, "|": null, "\"": null, "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "0": null, "-": null, "=": null, "!": null, "@": null, "#": null,
@@ -168,50 +128,127 @@ export default component$(() => {
     })
 
 
+    useVisibleTask$(() => {
+        let id = 0;
+        let prev = "null";
+        let prev_container;
+
+        let containers = window.document.querySelectorAll("[data-navigate-container]");
+        for (const container of containers) {
+            container.setAttribute("data-navigate-id", String(id))
+            container.setAttribute("data-navigate-prev", prev)
+            container.setAttribute("data-navigate-next", "null")
+            prev = String(id);
+            prev_container?.setAttribute("data-navigate-next", String(id))
+            id++
+            prev_container = container;
+        }
+        prev_container?.lastElementChild?.setAttribute("data-navigate-ty", "cursor");
+    }, { strategy: "document-ready" });
+
+    let x_dim = useSignal<number | null>(null);
+    let y_dim = useSignal<number | null>(null);
+
+    let navigate_right = $(() => {
+        if (!window) { return }
+        let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
+        if (!nav) {
+            return
+        }
+        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        if (!parent) {
+            return
+        }
+        x_dim.value = null;
+        let prev = nav.nextElementSibling;
+        if (prev) {
+            nav.removeAttribute("data-navigate-ty");
+            prev.setAttribute("data-navigate-ty", "cursor");
+        } else {
+            // let prev_cont = window.document.querySelectorAll(`[data-container]`);
+            // // if (prev_cont) {
+            // //
+            // // }
+        }
+    });
+    let navigate_left = $(() => {
+        if (!window) { return }
+        let nav = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
+        if (!nav) {
+            return
+        }
+        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        if (!parent) {
+            return
+        }
+        x_dim.value = null;
+        let prev = nav.previousElementSibling;
+        if (prev) {
+            nav.removeAttribute("data-navigate-ty");
+            prev.setAttribute("data-navigate-ty", "cursor");
+        } else {
+            // let prev_cont = window.document.querySelectorAll(`[data-container]`);
+            // // if (prev_cont) {
+            // //
+            // // }
+        }
+    });
     let navigate_up = $(() => {
         if (!window) { return }
         let cursor = window.document.querySelector("[data-navigate-ty=\"cursor\"]");
         if (!cursor) {
             return
         }
-        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        let parent = cursor.parentElement;
+        let prev_id = parent?.getAttribute("data-navigate-prev");
+        let next_parent: Element | null | undefined;
+        if (prev_id === "null") {
+            next_parent = null
+        } else {
+            next_parent = window.document.querySelector("[data-navigate-id=\"" + prev_id + "\"")?.lastElementChild;
+        }
+
         let parent_type = parent?.getAttribute("data-navigate-container");
-        if (!parent || !parent_type) {
+
+        if (!parent || !parent_type || !prev_id || next_parent === undefined) {
+            console.error("missing information for navigating", { parent, parent_type, prev_id, prev: next_parent })
             return
         }
+        y_dim.value = null;
 
         let cursor_rect = cursor.getBoundingClientRect();
         let parent_rect = parent.getBoundingClientRect();
-        let x = cursor_rect.x + (cursor_rect.width / 2) - parent_rect.x;
-        let x_that_decreases = x;
-        let look_forward = cursor.previousElementSibling;
-        while (look_forward != null) {
-            let look_forward_rect = look_forward.getBoundingClientRect();
-            let left = look_forward_rect.x - parent_rect.x;
-            // console.log(look_forward.childNodes[0], x, x_that_increases, right)
-            if (left < x_that_decreases) {
-                let look_forwardx = look_forward.previousElementSibling;
-                if (!look_forwardx) { break }
-                look_forward = look_forwardx;
-                x_that_decreases = left;
-                continue
-            } else if (left < x) {
-                // found
+        let x_new = cursor_rect.x + (cursor_rect.width / 2) - parent_rect.x;
+        if (x_dim.value === null) {
+            x_dim.value = x_new;
+        }
+        let x = x_dim.value;
+        let y = cursor_rect.y;
+        let move_to = cursor.previousElementSibling;
+        if (move_to === null) {
+            move_to = next_parent
+        }
+        while (move_to != null) {
+            let move_to_rect = move_to.getBoundingClientRect();
+            let left = move_to_rect.x - parent_rect.x;
+            let right = move_to_rect.x + move_to_rect.width - parent_rect.x;
+            let top = move_to_rect.y;
+            if (top < y && ((left < x && x < right) || (left < x && right < x))) {
                 break
+            }
+
+            // console.log({ look_backward: look_backward.firstChild?.textContent, top, x, y, left })
+            let lookbackwardx = move_to.previousElementSibling;
+            if (!lookbackwardx) {
+                move_to = next_parent
             } else {
-                let look_forwardx = look_forward.previousElementSibling;
-                if (!look_forwardx) { break }
-                look_forward = look_forwardx;
-                continue
+                move_to = lookbackwardx
             }
         }
 
-        // console.log("lookforward", look_forward?.childNodes[0])
-
-
-        if (look_forward != null) {
+        if (move_to != null) {
             cursor.removeAttribute("data-navigate-ty");
-            look_forward.setAttribute("data-navigate-ty", "cursor");
+            move_to.setAttribute("data-navigate-ty", "cursor");
         }
     });
     let navigate_down = $(() => {
@@ -220,82 +257,100 @@ export default component$(() => {
         if (!cursor) {
             return
         }
-        let parent = window.document.querySelector("[data-navigate-ty=\"parent\"]");
+        let parent = cursor.parentElement;
+        let prev_id = parent?.getAttribute("data-navigate-next");
+        let next_container_child: Element | null | undefined;
+        if (prev_id === "null") {
+            next_container_child = null
+        } else {
+            next_container_child = window.document.querySelector("[data-navigate-id=\"" + prev_id + "\"")?.firstElementChild;
+        }
+
         let parent_type = parent?.getAttribute("data-navigate-container");
-        if (!parent || !parent_type) {
+
+        if (!parent || !parent_type || !prev_id || next_container_child === undefined) {
+            console.error("missing information for navigating", { parent, parent_type, prev_id, prev: next_container_child })
             return
         }
+        y_dim.value = null;
 
         let cursor_rect = cursor.getBoundingClientRect();
         let parent_rect = parent.getBoundingClientRect();
-        let x = cursor_rect.x + cursor_rect.width / 2 - parent_rect.x;
-        let x_that_increases = x;
-        cursor.setAttribute("data-navigate-x", String(x));
-
-        let look_forward = cursor.nextElementSibling;
-        while (look_forward != null) {
-            let look_forward_rect = look_forward.getBoundingClientRect();
-            let right = look_forward_rect.x + look_forward_rect.width - parent_rect.x;
-            // console.log(look_forward.childNodes[0], x, x_that_increases, right)
-            if (right > x_that_increases) {
-                let look_forwardx = look_forward.nextElementSibling;
-                if (!look_forwardx) { break }
-                look_forward = look_forwardx;
-                x_that_increases = right;
-                continue
-            } else if (right > x) {
-                // found
+        let x_new = cursor_rect.x + (cursor_rect.width / 2) - parent_rect.x;
+        if (x_dim.value === null) {
+            x_dim.value = x_new;
+        }
+        let x = x_dim.value;
+        let y = cursor_rect.y;
+        let move_to = cursor.nextElementSibling;
+        if (move_to === null) {
+            move_to = next_container_child
+        }
+        while (move_to != null) {
+            let move_to_rect = move_to.getBoundingClientRect();
+            let left = move_to_rect.x - parent_rect.x;
+            let right = move_to_rect.x + move_to_rect.width - parent_rect.x;
+            let top = move_to_rect.y;
+            if (top > y && ((left < x && x < right) || (left > x && right > x))) {
                 break
-            } else {
-                let look_forwardx = look_forward.nextElementSibling;
-                if (!look_forwardx) { break }
-                look_forward = look_forwardx;
-                continue
+            }
+
+            // console.log({ look_backward: move_to.firstChild?.textContent, top, x, y, left })
+            let lookbackwardx = move_to.nextElementSibling;
+            if (!lookbackwardx && next_container_child !== null) {
+                move_to = next_container_child
+            }
+            // else if (!lookbackwardx) {
+            //     break
+            // } 
+            else {
+                move_to = lookbackwardx
             }
         }
 
-        // console.log("lookforward", look_forward?.childNodes[0])
-
-
-        if (look_forward != null) {
+        if (move_to != null) {
             cursor.removeAttribute("data-navigate-ty");
-            look_forward.setAttribute("data-navigate-ty", "cursor");
+            move_to.setAttribute("data-navigate-ty", "cursor");
         }
     });
 
     useVisibleTask$(async () => {
+        add_action({ plugin: "core", id: "navigate_right" }, navigate_right);
+        add_action({ plugin: "core", id: "navigate_left" }, navigate_left);
         add_action({ plugin: "core", id: "navigate_down" }, navigate_down);
         add_action({ plugin: "core", id: "navigate_up" }, navigate_up);
+        add_keymap({ action_id: { plugin: "core", id: "navigate_right" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "l", alt_pressed: false, ctrl_pressed: false } });
+        add_keymap({ action_id: { plugin: "core", id: "navigate_left" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "h", alt_pressed: false, ctrl_pressed: false } });
         add_keymap({ action_id: { plugin: "core", id: "navigate_down" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "j", alt_pressed: false, ctrl_pressed: false } });
         add_keymap({ action_id: { plugin: "core", id: "navigate_up" }, mode: "navigate", keystroke: { mode: "one_presdown", key: "k", alt_pressed: false, ctrl_pressed: false } });
     }, { strategy: "document-ready" });
 
     // set up core plugin!
-    useVisibleTask$(async () => {
-        for (const item of core_actions) {
-            let key = item[0].name;
-            let action = item[0];
-            await add_action({ plugin: "core", id: key }, action);
-
-            let keymap = item[2];
-            let mode = item[1];
-            if (keymap) {
-                add_keymap({
-                    mode: mode,
-                    action_id: {
-                        plugin: "core",
-                        id: key,
-                    },
-                    keystroke: {
-                        mode: "one_presdown",
-                        key: keymap.key,
-                        alt_pressed: keymap.alt_pressed,
-                        ctrl_pressed: keymap.ctrl_pressed,
-                    }
-                })
-            }
-        }
-    }, { strategy: "document-ready" });
+    // useVisibleTask$(async () => {
+    //     for (const item of core_actions) {
+    //         let key = item[0].name;
+    //         let action = item[0];
+    //         await add_action({ plugin: "core", id: key }, action);
+    //
+    //         let keymap = item[2];
+    //         let mode = item[1];
+    //         if (keymap) {
+    //             add_keymap({
+    //                 mode: mode,
+    //                 action_id: {
+    //                     plugin: "core",
+    //                     id: key,
+    //                 },
+    //                 keystroke: {
+    //                     mode: "one_presdown",
+    //                     key: keymap.key,
+    //                     alt_pressed: keymap.alt_pressed,
+    //                     ctrl_pressed: keymap.ctrl_pressed,
+    //                 }
+    //             })
+    //         }
+    //     }
+    // }, { strategy: "document-ready" });
 
     let current = useSignal<{ block_20_7e_val: boolean } & Omit<Mode, "runtime_value_schema" | "enter_dom" | "exit_dom">>({
         id: "navigate",
@@ -486,44 +541,28 @@ export default component$(() => {
                 <RouterHead />
             </head>
             <body lang="en" class="bg-100" style={{ userSelect: "none" }}>
-                <div class="flex flex-col h-screen">
-                    <div class="root flex-1 px-2 grid justify-center">
-                        <div class="feed w-max-full w-[400px] flex flex-col">
-                            {layout_ready_in.value == 0 &&
-                                <>
-                                    <div class="flex-1 " />
-                                    <div data-navigate-ty="parent" data-navigate-container="flex-row"
-                                        class=" flex flex flex-wrap gap-1 ">
-                                        <div>porro</div>
-                                        <div>porro</div>
-                                        <div>quisquam</div>
-                                        <div>est</div>
-                                        <div>dolorem</div>
-                                        <div>ipsum</div>
-                                        <div>quia</div>
-                                        <div>dolor</div>
-                                        <div>sit</div>
-                                        <div>amet</div>
-                                        <div>hi </div>
-                                        <div>quisquam</div>
-                                        <div>est</div>
-                                        <div data-navigate-ty="cursor">qui</div>
-                                        <div>dolorem</div>
-                                        <div>ipsum</div>
-                                        <div>quia</div>
-                                        <div>dolor</div>
-                                        <div>sit</div>
-                                        <div>amet</div>
-                                        <div>hi </div>
-                                        <div>world</div>
-                                    </div>
-                                    <div class="rounded m-4 px-1 bg-200 focus-within:bg-100 focus-within:ring focus-within:ring-1 focus-within:ring-slate">
-                                        <input data-command="main" placeholder="click ctrl + ; to go to command mode" class="w-full" type="text" />
+                <div class="flex flex-col h-screen px-1">
+                    <div class="w-[400px] [align-self:center] root flex-1 overflow-y-auto justify-center">
+                        <div class="feed w-max-full flex flex-col h-full">
+                            <div class="flex-1" />
+                            <div>
+                                {layout_ready_in.value == 0 && <>
+                                    <div data-navigate-ty="parent" data-navigate-container="flex-row" class=" flex flex flex-wrap gap-1 ">
+                                        <div>porro</div> <div>porro</div> <div>quisquam</div> <div>est</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>quisquam</div> <div>est</div> <div>qui</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>world</div> </div>
+                                    <div data-navigate-ty="parent" data-navigate-container="flex-row" class=" flex flex flex-wrap gap-1 ">
+                                        <div>porro</div> <div>porro</div> <div>quisquam</div> <div>est</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>quisquam</div> <div>est</div> <div>qui</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>world</div> </div>
+                                    <div data-navigate-ty="parent" data-navigate-container="flex-row" class=" flex flex flex-wrap gap-1 ">
+                                        <div>porro</div> <div>porro</div> <div>quisquam</div> <div>est</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>quisquam</div> <div>est</div> <div>qui</div> <div>dolorem</div> <div>ipsum</div> <div>quia</div> <div>dolor</div> <div>sit</div> <div>amet</div> <div>hi </div> <div>world</div> </div>
+                                    <div data-navigate-ty="parent" data-navigate-container="flex-row" class=" grid grid-cols-16 gap-1">
+                                        <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div><div>25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div><div>34</div><div>35</div><div>36</div><div>37</div><div>38</div><div>39</div><div>40</div>
                                     </div>
                                 </>
-                            }
-                            <RouterOutlet />
+                                }
+                            </div>
                         </div>
+                    </div>
+                    <div class="rounded w-[400px] [align-self:center] m-4 p-1 px-3 bg-200 focus-within:bg-100 focus-within:ring focus-within:ring-1 focus-within:ring-slate">
+                        <input data-command="main" placeholder="click ctrl + ; to go to command mode" class="w-full" type="text" />
                     </div>
                     <div class="bar bg-slate-900 text-white flex">
                         {current.value &&

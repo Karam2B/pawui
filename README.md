@@ -68,7 +68,7 @@ I think defining a new mode is a little bit involved and the vast majority of pl
 ✨✨setting keymaps are no longer the developer responsibility, the developer only care to associate actions to commands and buttons, and if the user thinks an action is important they can assign a keymap themselfs to quickly perform that action!✨✨
 
 ## Roadmap
-[ ] - being able to navigate up and down
+[x] - being able to navigate up and down
 [ ] - change cursor color
 [ ] - build textarea component
 [ ] - a way to list, add, remove keymaps
