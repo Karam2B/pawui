@@ -1,4 +1,4 @@
-import { noSerialize, $, Slot, component$, isDev, useSignal, useStylesScoped$, useTask$, useVisibleTask$, NoSerialize } from "@builder.io/qwik";
+import { noSerialize, $, Slot, component$, isDev, useSignal, useStylesScoped$, useTask$, useVisibleTask$, NoSerialize, useStore } from "@builder.io/qwik";
 import * as v from "valibot"
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import { RouterHead } from "./components/router-head/router-head";
@@ -59,6 +59,28 @@ const core_modes: Array<Mode> = [{
     exit_dom: () => { },
 },
 {
+    id: "insert",
+    block_20_7e: "always",
+    view: {
+        fg: "black", bg: "oklch(72.3% 0.219 149.579)"
+    },
+    runtime_value_schema: v.object({}),
+    enter_dom: () => {
+        if (!window) {
+            console.error("window not found");
+            return
+        }
+        let elem = window.document.querySelector('[data-navigate-ty="cursor"]');
+        if (!elem) {
+            console.error("navigate was not found")
+            return
+        }
+        // @ts-ignore
+        window.document.activeElement.blur();
+    },
+    exit_dom: () => { },
+},
+{
     id: "command",
     block_20_7e: "never",
     view: {
@@ -96,6 +118,7 @@ const core_modes: Array<Mode> = [{
 // ] as Array<[() => Promise<void>, string, null | Keymap["keystroke"]]>
 
 const keys_20_7e = {
+    "Backspace": null,
     " ": null, "\\": null, "|": null, "\"": null, "1": null, "2": null, "3": null, "4": null, "5": null, "6": null, "7": null, "8": null, "9": null, "0": null, "-": null, "=": null, "!": null, "@": null, "#": null,
     "$": null, "%": null, "^": null, "&": null, "*": null, "(": null, ")": null, "_": null, "+": null, "`": null, "~": null, "q": null, "w": null, "e": null, "r": null, "t": null, "y": null, "u": null, "i": null, "o": null, "p": null, "[": null, "]": null, "a": null, "s": null, "d": null, "f": null, "g": null, "h": null, "j": null, "k": null,
     "l": null, ";": null, "'": null, "z": null, "x": null, "c": null, "v": null, "b": null, "n": null, "m": null, ",": null, ".": null, "/": null, "Q": null, "W": null, "E": null, "R": null, "T": null, "Y": null, "U": null, "I": null, "O": null, "P": null, "{": null,
@@ -104,6 +127,9 @@ const keys_20_7e = {
 
 
 export default component$(() => {
+    let navigate_setting = useStore({ cursor_color: "blue" });
+    let command_input = useSignal<HTMLInputElement>();
+    let command_history = useSignal<Array<GlobalIdent>>([]);
     let layout_ready_in = useSignal(1);
 
     let actions = useSignal<Map<string, () => void>>(new Map());
@@ -355,7 +381,7 @@ export default component$(() => {
     let current = useSignal<{ block_20_7e_val: boolean } & Omit<Mode, "runtime_value_schema" | "enter_dom" | "exit_dom">>({
         id: "navigate",
         block_20_7e: "never",
-        block_20_7e_val: false,
+        block_20_7e_val: true,
         view: {
             fg: "black", bg: "oklch(72.3% 0.219 149.579)"
         },
@@ -418,8 +444,9 @@ export default component$(() => {
         async function prevent_def(ev: KeyboardEvent) {
             // @ts-ignore
             let found = keys_20_7e[ev.key];
-            if (current.value.block_20_7e_val && found == null && !ev.altKey && !ev.ctrlKey) {
-                console.log("input is allowed to pass");
+
+            if (!current.value.block_20_7e_val && found === null && !ev.altKey && !ev.ctrlKey) {
+                console.log("input is allowed to pass: " + ev.key);
             } else {
                 ev.preventDefault();
                 await keydown_event(ev);
@@ -462,6 +489,16 @@ export default component$(() => {
                 console.error("no mode by name: ", "navigate", "available modes are", modes.value)
             }
         });
+        await add_keymap({
+            mode: "command",
+            action_id: {
+                plugin: "core",
+                id: "go_to_navigate_mode",
+            },
+            keystroke: {
+                mode: "one_presdown", key: "d", ctrl_pressed: true, alt_pressed: false
+            }
+        })
         await add_action({ plugin: "core", id: "go_to_normal_mode" }, async () => {
             let found = modes.value?.find((e) => {
                 // console.log("find mode", e, e.id == "command");
@@ -473,16 +510,7 @@ export default component$(() => {
                 console.error("no mode by name: ", "command", "available modes are", modes.value)
             }
         });
-        await add_keymap({
-            mode: "command",
-            action_id: {
-                plugin: "core",
-                id: "go_to_navigate_mode",
-            },
-            keystroke: {
-                mode: "one_presdown", key: "d", ctrl_pressed: true, alt_pressed: false
-            }
-        })
+
         await add_keymap({
             mode: "navigate",
             action_id: {
@@ -491,6 +519,33 @@ export default component$(() => {
             },
             keystroke: {
                 mode: "one_presdown", key: ";", ctrl_pressed: true, alt_pressed: false
+            }
+        })
+        await add_action({ plugin: "core", id: "fire_action" }, async () => {
+            if (!command_input.value) {
+                console.error("command input is not initialized")
+                return
+            }
+            let val = command_input.value.value;
+            let all = val.split("::");
+            let comman = { plugin: all[0], id: all[1] };
+            if (!val.search("::") || !comman.plugin || !comman.id) {
+                console.error("command entered is not valid: " + val)
+                return
+            }
+            command_history.value.push(comman);
+            command_input.value.value = ""
+            await fire_action(comman)
+        });
+
+        await add_keymap({
+            mode: "command",
+            action_id: {
+                plugin: "core",
+                id: "fire_action",
+            },
+            keystroke: {
+                mode: "one_presdown", key: "Enter", ctrl_pressed: false, alt_pressed: false
             }
         })
     }, { strategy: "document-ready" })
@@ -515,15 +570,17 @@ export default component$(() => {
 
     useStylesScoped$(`
         .bar > :global(div) { padding: 0 0.4em }
+        .w-def { width: 400px; margin-right: 0.5em; margin-left: 0.5em}
+        
     `);
 
     useStylesScoped$(`
-        .feed > :global(div) { margin: 0.3em 0em; padding: 0.2em 0.5em }
+        .feed > :global(div) { margin-top: 0.3em }
         .feed > :global(div:last-child) { margin-bottom: 0.6em }
     `);
 
     useStylesScoped$(`
-       [data-navigate-ty="cursor"] {background: red}
+       [data-navigate-ty="cursor"] {background: var(--cursor-color)}
     `);
 
 
@@ -536,13 +593,13 @@ export default component$(() => {
                     <link
                         rel="manifest"
                         href={`${import.meta.env.BASE_URL}manifest.json`}
-                    />
-                )}
+                    />)
+                }
                 <RouterHead />
             </head>
-            <body lang="en" class="bg-100" style={{ userSelect: "none" }}>
+            <body lang="en" class="bg-100" style={{ userSelect: "none", ["--cursor-color"]: navigate_setting.cursor_color }}>
                 <div class="flex flex-col h-screen px-1">
-                    <div class="w-[400px] [align-self:center] root flex-1 overflow-y-auto justify-center">
+                    <div class="w-def [align-self:center] root flex-1 overflow-y-auto justify-center">
                         <div class="feed w-max-full flex flex-col h-full">
                             <div class="flex-1" />
                             <div>
@@ -556,13 +613,14 @@ export default component$(() => {
                                     <div data-navigate-ty="parent" data-navigate-container="flex-row" class=" grid grid-cols-16 gap-1">
                                         <div>0</div><div>1</div><div>2</div><div>3</div><div>4</div><div>5</div><div>6</div><div>7</div><div>8</div><div>9</div><div>10</div><div>11</div><div>12</div><div>13</div><div>14</div><div>15</div><div>16</div><div>17</div><div>18</div><div>19</div><div>20</div><div>21</div><div>22</div><div>23</div><div>24</div><div>25</div><div>26</div><div>27</div><div>28</div><div>29</div><div>30</div><div>31</div><div>32</div><div>33</div><div>34</div><div>35</div><div>36</div><div>37</div><div>38</div><div>39</div><div>40</div>
                                     </div>
+                                    <div contenteditible> hell owld</div>
                                 </>
                                 }
                             </div>
                         </div>
                     </div>
-                    <div class="rounded w-[400px] [align-self:center] m-4 p-1 px-3 bg-200 focus-within:bg-100 focus-within:ring focus-within:ring-1 focus-within:ring-slate">
-                        <input data-command="main" placeholder="click ctrl + ; to go to command mode" class="w-full" type="text" />
+                    <div class="rounded w-def mb-4 [align-self:center] bg-200 focus-within:bg-100 focus-within:ring focus-within:ring-1 focus-within:ring-slate">
+                        <input ref={command_input} data-command="main" placeholder="click ctrl + ; to go to command mode" class="w-full p-3" type="text" />
                     </div>
                     <div class="bar bg-slate-900 text-white flex">
                         {current.value &&
@@ -580,4 +638,4 @@ export const FeedItem = component$(() => {
     return <div class=" rounded p-2"><Slot /></div>
 })
 
-type KeySet = "tab" | ":" | "q" | "w" | "e" | "r" | "t" | "y" | "u" | "i" | "o" | "p" | "[" | "{" | "]" | "}" | "a" | "s" | "d" | "f" | "g" | "h" | "j" | "k" | "l" | ";" | ":" | "'" | "\"" | "z" | "x" | "c" | "v" | "b" | "n" | "m" | " < " | "." | " > " | " / " | " ? " | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0" | "-" | "=" | "`" | "~" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "_" | "+"
+type KeySet = "Enter" | "CapsLock" | "Escape" | "Tab" | ":" | "q" | "w" | "e" | "r" | "t" | "y" | "u" | "i" | "o" | "p" | "[" | "{" | "]" | "}" | "a" | "s" | "d" | "f" | "g" | "h" | "j" | "k" | "l" | ";" | ":" | "'" | "\"" | "z" | "x" | "c" | "v" | "b" | "n" | "m" | " < " | "." | " > " | " / " | " ? " | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" | "0" | "-" | "=" | "`" | "~" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "_" | "+"

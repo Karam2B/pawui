@@ -73,12 +73,14 @@ I think defining a new mode is a little bit involved and the vast majority of pl
 [ ] - build textarea component
 [ ] - a way to list, add, remove keymaps
 [ ] - more navigate views, now I only have flex-wrap, I;m thinking about: grid, flex-nowrap
+[ ] - handling errors in actions, this is important to finalize the action API
+[ ] -
 [ ] - implement leap commands
 [ ] - implement leap navigate
 [ ] - in navigate, should the component decide to split text by work or by charachter or that would be a global setting
 [ ] - in COMMAND mode, should be able to fuzzy call any command
-[ ] - a way to hold notification, errors
-[ ] - a way to have AI-dock
+[ ] - a place to hold notification, errors
+[ ] - a view to have AI-dock
 [ ] - regesteries
 [ ] - macros
 [ ] - pocketbase backend
@@ -111,3 +113,4 @@ I think defining a new mode is a little bit involved and the vast majority of pl
 *ARIA and tabindex attribute*: I'm mixed whether ARIA in general and tabindex in specific are created for different aim compare to this project and should be regarded, or whether the specification here can be a reasonable extention to ARIA where accessibility to the UI is not restricted!
 *pseudo-class :active*: I think this will not be needed because it seems activating anything is intentional enough, no UI should display alternative view based on that
 *pseudo-class :hover*: maybe that is the only state that navigate mode is interested in
+*vscode `when` clause would become obselete*: in vscode if `when` clause evaluate to false the action is *silently* fail to evaluate, this is unwanted behavior, if once a keystroke maps to an action, the action have to do what it is meant to do or is should issue an error, an action can decide to be no-op under some circumstance but it should be predictable from the signature/semantic of that action.
